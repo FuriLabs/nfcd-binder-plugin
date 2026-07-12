@@ -1,13 +1,13 @@
 Name: nfcd-binder-plugin
 
-Version: 1.1.9
+Version: 1.2.1
 Release: 0
-Summary: Binder-based NFC plugin
+Summary: Binder-based NCI I/O plugin for nfcd
 License: BSD
 URL: https://github.com/mer-hybris/nfcd-binder-plugin
 Source: %{name}-%{version}.tar.bz2
 
-%define libgbinder_version 1.0.30
+%define libgbinder_version 1.0.40
 %define nfcd_version 1.0.20
 
 BuildRequires: pkgconfig
@@ -20,25 +20,24 @@ BuildRequires: pkgconfig(nfcd-plugin) >= %{nfcd_version}
 BuildRequires: pkgconfig(rpm)
 %define license_support %(pkg-config --exists 'rpm >= 4.11'; echo $?)
 
+# make_build macro appeared in rpm 4.12
+%{!?make_build:%define make_build make %{_smp_mflags}}
+
 Requires: libgbinder >= %{libgbinder_version}
 Requires: nfcd >= %{nfcd_version}
 
 %define plugin_dir %{_libdir}/nfcd/plugins
 
 %description
-Binder-based NFC plugin for Android 8+.
+Binder-based NCI I/O plugin for nfcd
 
 %prep
 %setup -q
 
 %build
-make %{_smp_mflags} \
-    %{?disable_hexdump: DISABLE_HEXDUMP=1} \
-    KEEP_SYMBOLS=1 \
-    release
+%make_build %{?disable_hexdump: DISABLE_HEXDUMP=1} KEEP_SYMBOLS=1 release
 
 %install
-rm -rf %{buildroot}
 make DESTDIR=%{buildroot} PLUGIN_DIR=%{plugin_dir} install
 
 %post
@@ -48,7 +47,6 @@ systemctl reload-or-try-restart nfcd.service ||:
 systemctl reload-or-try-restart nfcd.service ||:
 
 %files
-%defattr(-,root,root,-)
 %dir %{plugin_dir}
 %{plugin_dir}/*.so
 %if %{license_support} == 0
